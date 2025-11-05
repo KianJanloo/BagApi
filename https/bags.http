@@ -1,0 +1,27 @@
+GET http://localhost:5288/bags
+
+###
+GET http://localhost:5288/bags/2
+
+###
+POST http://localhost:5288/bags
+Content-Type: application/json
+
+{
+    "Name": "Lizida",
+    "BrandId": 1,
+    "Price": 100
+}
+
+###
+PUT http://localhost:5288/bags/1
+Content-Type: application/json
+
+{
+    "Name": "Looz",
+    "BrandId": 1,
+    "Price": 100
+}
+
+###
+DELETE http://localhost:5288/bags/1
