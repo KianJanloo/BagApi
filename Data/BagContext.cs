@@ -1,24 +1,27 @@
-
 using BagApi.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BagApi.Data;
 
-public class BagContext(DbContextOptions<BagContext> options): DbContext(options)
+public class BagContext : IdentityDbContext<IdentityUser>
 {
+    public BagContext(DbContextOptions<BagContext> options) : base(options)
+    {
+    }
+
     public DbSet<Bag> Bags => Set<Bag>();
-
     public DbSet<Brand> Brands => Set<Brand>();
-
-    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.Entity<Brand>().HasData(
-            new { Id = 1, Name = "Zara" },
-            new { Id = 2, Name = "Gogoli" },
-            new { Id = 3, Name = "Shimimi" }
+            new Brand { Id = 1, Name = "Zara" },
+            new Brand { Id = 2, Name = "Gogoli" },
+            new Brand { Id = 3, Name = "Shimimi" }
         );
     }
-
 }

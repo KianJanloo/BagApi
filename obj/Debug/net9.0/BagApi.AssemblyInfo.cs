@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BagApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a3fc78072f75b349e03669ba5b3971ca7c62b48f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b630cf2178b4c294f3eb270e1b0c44ad43f6c167")]
 [assembly: System.Reflection.AssemblyProductAttribute("BagApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BagApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

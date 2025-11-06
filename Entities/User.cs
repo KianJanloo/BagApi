@@ -1,12 +1,9 @@
-using System;
+using Microsoft.AspNetCore.Identity;
 
-namespace BagApi.Entities;
-
-public class User
+namespace BagApi.Entities
 {
-    public required string FirstName { get; set; }
-    
-    public required string LastName { get; set; }
-
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public class User : IdentityUser
+    {
+        public string? FullName { get; set; }
+    }
 }
