@@ -21,7 +21,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] LoginDto dto)
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
         var user = new User { UserName = dto.Email, Email = dto.Email };
         var result = await _userManager.CreateAsync(user, dto.Password);
@@ -40,56 +40,51 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid credentials");
 
         var accessToken = _jwt.GenerateAccessToken(user);
-        var refreshToken = _jwt.GenerateRefreshToken();
+        var refreshToken = _jwt.GenerateRefreshToken(HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown", user.Id);
 
-        _db.RefreshTokens.Add(new RefreshToken
-        {
-            Token = refreshToken,
-            UserId = user.Id,
-            ExpiryDate = DateTime.UtcNow.AddDays(7)
-        });
-
+        _db.RefreshTokens.Add(refreshToken);
         await _db.SaveChangesAsync();
 
         return Ok(new TokenResponse
         {
             AccessToken = accessToken,
-            RefreshToken = refreshToken
+            RefreshToken = refreshToken.Token
         });
     }
 
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshDto dto)
     {
-        var token = await _db.RefreshTokens
-            .Include(rt => rt.UserId)
+        var oldToken = await _db.RefreshTokens
             .FirstOrDefaultAsync(rt => rt.Token == dto.RefreshToken);
 
-        if (token == null || !token.IsActive)
+        if (oldToken == null || !oldToken.IsActive)
             return Unauthorized("Invalid refresh token");
 
-        // revoke old token
-        token.IsRevoked = true;
-
-        var user = await _userManager.FindByIdAsync(token.UserId);
+        var user = await _userManager.FindByIdAsync(oldToken.UserId);
         if (user == null) return Unauthorized();
 
+        // Revoke old token
+        oldToken.RevokedAt = DateTime.UtcNow;
+        oldToken.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+        // Generate new tokens
         var newAccessToken = _jwt.GenerateAccessToken(user);
-        var newRefreshToken = _jwt.GenerateRefreshToken();
+        var newRefreshToken = _jwt.GenerateRefreshToken(
+            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            user.Id
+        );
 
-        _db.RefreshTokens.Add(new RefreshToken
-        {
-            Token = newRefreshToken,
-            UserId = user.Id,
-            ExpiryDate = DateTime.UtcNow.AddDays(7)
-        });
+        oldToken.ReplacedByToken = newRefreshToken.Token;
 
+        _db.RefreshTokens.Add(newRefreshToken);
         await _db.SaveChangesAsync();
 
         return Ok(new TokenResponse
         {
             AccessToken = newAccessToken,
-            RefreshToken = newRefreshToken
+            RefreshToken = newRefreshToken.Token
         });
     }
+
 }

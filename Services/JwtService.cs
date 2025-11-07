@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using BagApi.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
@@ -37,8 +38,19 @@ public class JwtService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public string GenerateRefreshToken()
+    public RefreshToken GenerateRefreshToken(string ipAddress, string userId)
+{
+    var randomBytes = RandomNumberGenerator.GetBytes(64);
+    var token = Convert.ToBase64String(randomBytes);
+
+    return new RefreshToken
     {
-        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
-    }
+        Token = token,
+        UserId = userId,
+        ExpiresAt = DateTime.UtcNow.AddDays(7),
+        CreatedAt = DateTime.UtcNow,
+        CreatedByIp = ipAddress
+    };
+}
+
 }
