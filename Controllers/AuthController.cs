@@ -23,13 +23,23 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        var user = new User { UserName = dto.Email, Email = dto.Email };
+        var user = new User
+        {
+            UserName = dto.UserName,
+            Email = dto.Email,
+        };
+
         var result = await _userManager.CreateAsync(user, dto.Password);
 
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        return Ok("User registered");
+        var roleResult = await _userManager.AddToRoleAsync(user, "User");
+
+        if (!roleResult.Succeeded)
+            return BadRequest(roleResult.Errors);
+
+        return Ok(new { message = "User registered successfully with role 'User'" });
     }
 
     [HttpPost("login")]
@@ -39,7 +49,7 @@ public class AuthController : ControllerBase
         if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
             return Unauthorized("Invalid credentials");
 
-        var accessToken = _jwt.GenerateAccessToken(user);
+        var accessToken = await _jwt.GenerateAccessToken(user);
         var refreshToken = _jwt.GenerateRefreshToken(HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown", user.Id);
 
         _db.RefreshTokens.Add(refreshToken);
@@ -69,7 +79,7 @@ public class AuthController : ControllerBase
         oldToken.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
 
         // Generate new tokens
-        var newAccessToken = _jwt.GenerateAccessToken(user);
+        var newAccessToken = await _jwt.GenerateAccessToken(user);
         var newRefreshToken = _jwt.GenerateRefreshToken(
             HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             user.Id

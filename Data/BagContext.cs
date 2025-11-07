@@ -13,6 +13,7 @@ public class BagContext : IdentityDbContext<User>
     public DbSet<Bag> Bags => Set<Bag>();
     public DbSet<Brand> Brands => Set<Brand>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<SocialLink> SocialLinks => Set<SocialLink>();
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

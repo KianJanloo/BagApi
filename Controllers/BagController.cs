@@ -1,6 +1,5 @@
 using BagApi.Data;
 using BagApi.Dtos.Bags;
-using BagApi.Entities;
 using BagApi.Mapping;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
