@@ -1,11 +1,10 @@
 using BagApi.Entities;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BagApi.Data;
 
-public class BagContext : IdentityDbContext<IdentityUser>
+public class BagContext : IdentityDbContext<User>
 {
     public BagContext(DbContextOptions<BagContext> options) : base(options)
     {
@@ -13,7 +12,8 @@ public class BagContext : IdentityDbContext<IdentityUser>
 
     public DbSet<Bag> Bags => Set<Bag>();
     public DbSet<Brand> Brands => Set<Brand>();
-
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

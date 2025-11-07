@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Dtos\Auth\" />
     <Folder Include="Dtos\َعفا\" />
   </ItemGroup>
 

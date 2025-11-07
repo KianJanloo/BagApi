@@ -6,6 +6,7 @@ using WebApplication1.Data;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using BagApi.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,9 +18,10 @@ var connString = builder.Configuration.GetConnectionString("Bag");
 builder.Services.AddSqlite<BagContext>(connString);
 
 // Configure Identity with Roles
-builder.Services.AddIdentityApiEndpoints<IdentityUser>()
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<BagContext>();
+builder.Services.AddIdentity<User, IdentityRole>()
+    .AddEntityFrameworkStores<BagContext>()
+    .AddDefaultTokenProviders();
+
 
 // Configure Authentication & JWT
 builder.Services.AddAuthentication(options =>
@@ -74,6 +76,8 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
+builder.Services.AddSingleton<JwtService>();
 
 // Build App
 var app = builder.Build();
