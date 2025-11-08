@@ -1,7 +1,10 @@
 using BagApi.Data;
 using BagApi.Dtos.Auth;
 using BagApi.Entities;
+using BagApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,12 +15,14 @@ public class AuthController : ControllerBase
     private readonly UserManager<User> _userManager;
     private readonly BagContext _db;
     private readonly JwtService _jwt;
+    private readonly IEmailSender _emailSender;
 
-    public AuthController(UserManager<User> userManager, BagContext db, JwtService jwt)
+    public AuthController(UserManager<User> userManager, BagContext db, JwtService jwt, IEmailSender emailSender)
     {
         _userManager = userManager;
         _db = db;
         _jwt = jwt;
+        _emailSender = emailSender;
     }
 
     [HttpPost("register")]
@@ -74,11 +79,9 @@ public class AuthController : ControllerBase
         var user = await _userManager.FindByIdAsync(oldToken.UserId);
         if (user == null) return Unauthorized();
 
-        // Revoke old token
         oldToken.RevokedAt = DateTime.UtcNow;
         oldToken.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-        // Generate new tokens
         var newAccessToken = await _jwt.GenerateAccessToken(user);
         var newRefreshToken = _jwt.GenerateRefreshToken(
             HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -96,5 +99,60 @@ public class AuthController : ControllerBase
             RefreshToken = newRefreshToken.Token
         });
     }
+
+    [HttpPost("forget-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null)
+        {
+            return Ok(new { message = "Email not found." });
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var resetLink = Url.Action("ResetPassword", "Auth",
+            new { token, email = model.Email }, Request.Scheme);
+
+        await _emailSender.SendEmailAsync(model.Email, "Reset Password",
+            $"Click here to reset your password: <a href='{resetLink}'>Reset Password</a>");
+
+        return Ok(new { message = "Reset link sent to your email." });
+    }
+
+    [HttpGet("reset-password")]
+    [AllowAnonymous]
+    public IActionResult ResetPassword(string token, string email)
+    {
+        if (token == null || email == null)
+        {
+            return BadRequest("Invalid password reset token.");
+        }
+        return Ok();
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null)
+            return Ok(new { message = "The email not found." });
+
+        var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+        if (result.Succeeded)
+        {
+            return Ok(new { message = "Password has been reset successfully." });
+        }
+
+        return BadRequest(result.Errors.Select(e => e.Description));
+    }
+
 
 }

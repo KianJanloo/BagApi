@@ -7,6 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using BagApi.Entities;
+using BagApi.Services;
+using Microsoft.AspNetCore.Identity.UI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,7 +79,14 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// JWT Service
 builder.Services.AddScoped<JwtService>();
+
+// Email Sender
+builder.Services.Configure<SmtpSettings>(
+    builder.Configuration.GetSection("SmtpSettings"));
+
+builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 // Build App
 var app = builder.Build();
