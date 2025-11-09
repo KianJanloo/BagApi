@@ -20,16 +20,44 @@ namespace BagApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAll(
+            string? search,
+            string? sortBy = "Name",
+            string? sortOrder = "asc",
+            int page = 1,
+            int limit = 10
+        )
         {
+            var query = _dbContext.Brands.AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(b => b.Name.Contains(search));
+            }
+
+            query = sortBy?.ToLower() switch
+            {
+                "name" => sortOrder?.ToLower() == "desc" ? query.OrderByDescending(b => b.Name) : query.OrderBy(b => b.Name),
+                _ => sortOrder == "desc" ? query.OrderByDescending(p => p.Name) : query.OrderBy(p => p.Name),
+            };
+
             var brands = await _dbContext.Brands
+                .Skip((page - 1) * limit)
+                .Take(limit)
                 .Select(b => b.ToBrandDto())
                 .AsNoTracking()
                 .ToListAsync();
-            return Ok(brands);
+            return Ok(new
+            {
+                TotalItems = await query.CountAsync(),
+                Page = page,
+                Items = brands
+            });
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> Get(int id)
         {
             var brand = await _dbContext.Brands

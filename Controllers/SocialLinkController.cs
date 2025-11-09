@@ -10,7 +10,7 @@ namespace BagApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class SocialLinkController: ControllerBase
+public class SocialLinkController : ControllerBase
 {
     private readonly BagContext _dbContext;
 
@@ -20,16 +20,50 @@ public class SocialLinkController: ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAll(
+        string? search,
+        string? link,
+        string sortBy = "Name",
+        string sortOrder = "asc",
+        int page = 1,
+        int limit = 10
+    )
     {
+        var query = _dbContext.SocialLinks.AsQueryable();
+
+        query = sortBy.ToLower() switch
+        {
+            "name" => sortOrder.ToLower() == "desc" ? query.OrderByDescending(s => s.Name) : query.OrderBy(s => s.Name),
+            _ => sortOrder.ToLower() == "desc" ? query.OrderByDescending(s => s.Name) : query.OrderBy(s => s.Name),
+        };
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(s => s.Name.Contains(search));
+        }
+
+        if (!string.IsNullOrEmpty(link))
+        {
+            query = query.Where(s => s.Link.Contains(link));
+        }
+
         var socialLinks = await _dbContext.SocialLinks
+                                .Skip((page - 1) * limit)
+                                .Take(limit)
                                 .Select(s => s.ToSocialLinkDto())
                                 .AsNoTracking()
                                 .ToListAsync();
-        return Ok(socialLinks);
+        return Ok(new
+        {
+            TotalItems = await query.CountAsync(),
+            Page = page,
+            Items = socialLinks
+        });
     }
 
     [HttpGet("{id}")]
+    [AllowAnonymous]
     public async Task<IActionResult> Get(int id)
     {
         var socialLink = await _dbContext.SocialLinks

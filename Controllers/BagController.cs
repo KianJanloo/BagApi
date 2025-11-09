@@ -19,17 +19,58 @@ namespace BagApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAll(
+            string? search,
+            string? BrandFilter,
+            string sortBy = "Name",
+            string sortOrder = "asc",
+            int page = 1,
+            int limit = 10
+        )
         {
-            var bags = await _dbContext.Bags
-                .Include(b => b.Brand)
-                .Select(b => b.ToBagDto())
+            var query = _dbContext.Bags.AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(b => b.Name.Contains(search));
+            }
+
+            if (!string.IsNullOrEmpty(BrandFilter))
+            {
+                query = query.Include(b => b.Brand)
+                             .Where(b => b.Brand!.Name == BrandFilter);
+            }
+            else
+            {
+                query = query.Include(b => b.Brand);
+            }
+
+            query = sortBy.ToLower() switch
+            {
+                "name" => sortOrder.ToLower() == "desc" ? query.OrderByDescending(b => b.Name) : query.OrderBy(b => b.Name),
+                "price" => sortOrder.ToLower() == "desc" ? query.OrderByDescending(b => b.Price) : query.OrderBy(b => b.Price),
+                "createdat" => sortOrder.ToLower() == "desc" ? query.OrderByDescending(b => b.CreatedAt) : query.OrderBy(b => b.CreatedAt),
+                _ => sortOrder.ToLower() == "desc" ? query.OrderByDescending(b => b.Name) : query.OrderBy(b => b.Name),
+            };
+
+            int totalItems = await query.CountAsync();
+
+            var bags = await query
+                .Skip((page - 1) * limit)
+                .Take(limit)
                 .AsNoTracking()
                 .ToListAsync();
-            return Ok(bags);
+            return Ok(new
+            {
+                TotalItems = totalItems,
+                Page = page,
+                Items = bags.ConvertAll(b => b.ToBagDto())
+            });
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> Get(int id)
         {
             var bag = await _dbContext.Bags
