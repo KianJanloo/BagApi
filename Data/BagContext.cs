@@ -14,7 +14,7 @@ public class BagContext : IdentityDbContext<User>
     public DbSet<Brand> Brands => Set<Brand>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<SocialLink> SocialLinks => Set<SocialLink>();
-    
+    public DbSet<Shoes> Shoes => Set<Shoes>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
